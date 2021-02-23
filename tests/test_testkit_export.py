@@ -66,3 +66,28 @@ class TestkitExportTest(unittest.TestCase):
         # Now that we've exported our Sphere, let's check that we have an
         # fbx next to the lxo.
         self.assertTrue(os.path.exists(fbx))
+
+    def test_export_with_backup(self):
+        scene_path = lx.eval('query sceneservice scene.file ? current')
+        scene_dir = os.path.dirname(scene_path)
+        fbx = os.path.join(scene_dir, "Cone.fbx")
+
+        self.files.append(fbx)
+
+        self.assertFalse(os.path.exists(fbx))
+
+        # Select the Cone and export it,
+        lx.eval("select.subItem Cone set mesh;")
+        lx.eval("testkit.export")
+
+        # Check that we indeed did export a Cone.fbx
+        self.assertTrue(os.path.exists(fbx))
+
+        # Oh shoot, we forgot the unit cone is not planted to the floor,
+        # let's fix that and export again. If we wanted it as before we
+        # can always find the backup on desktop where it belongs.
+        lx.eval("transform.channel pos.Y 0.75")
+        lx.eval("testkit.export")
+
+        # Assert we still have an exported Cone.fbx
+        self.assertTrue(os.path.exists(fbx))
