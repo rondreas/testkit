@@ -2,18 +2,36 @@ import os
 import tempfile
 import unittest
 
+try:
+    from unittest import mock # was added in python 3.3 to std lib
+except ImportError:
+    import mock # non std lib, will require pip install
+
 import lx
+
+import testkit_export
 
 class TestkitExportTest(unittest.TestCase):
 
     # Keep track of files and scenes we've created,
     files = list()
-    
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            lx.bless(testkit_export.TestkitExport, "unittest.testkit.export")
+        except RuntimeError:
+            pass
+
     def setUp(self):
         """ This will be executed before any of the test methods we
         create. 
 
         """
+
+        patcher = mock.patch("testkit_export.long_running_task", return_value=None)
+        self.addCleanup(patcher.stop)
+        self.mock_task = patcher.start()
 
         # Create a scene and rember it's index
         lx.eval("scene.new")
@@ -61,7 +79,7 @@ class TestkitExportTest(unittest.TestCase):
 
         # Select the Sphere and export it,
         lx.eval("select.subItem Sphere set mesh;")
-        lx.eval("testkit.export")
+        lx.eval("unittest.testkit.export")
 
         # Now that we've exported our Sphere, let's check that we have an
         # fbx next to the lxo.
@@ -78,7 +96,7 @@ class TestkitExportTest(unittest.TestCase):
 
         # Select the Cone and export it,
         lx.eval("select.subItem Cone set mesh;")
-        lx.eval("testkit.export")
+        lx.eval("unittest.testkit.export")
 
         # Check that we indeed did export a Cone.fbx
         self.assertTrue(os.path.exists(fbx))
@@ -87,7 +105,9 @@ class TestkitExportTest(unittest.TestCase):
         # let's fix that and export again. If we wanted it as before we
         # can always find the backup on desktop where it belongs.
         lx.eval("transform.channel pos.Y 0.75")
-        lx.eval("testkit.export")
+
+        lx.eval("unittest.testkit.export")
 
         # Assert we still have an exported Cone.fbx
         self.assertTrue(os.path.exists(fbx))
+        self.mock_task.assert_called()
