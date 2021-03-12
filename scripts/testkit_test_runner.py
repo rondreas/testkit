@@ -4,6 +4,11 @@ import os
 import sys
 import unittest
 
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 import lx
 
 
@@ -21,9 +26,11 @@ def main():
 
     # And create a Text Test Runner, so the results gets printed
     # to std error, and let's us see the result in the Modo Logs,
-    runner = unittest.TextTestRunner()
-    runner.failfast = False
-    runner.run(suite)
+    with StringIO() as buf:
+        runner = unittest.TextTestRunner(stream=buf)
+        runner.failfast = False
+        runner.run(suite)
+        lx.out(buf.getvalue())
 
 
 if __name__ == '__main__':
